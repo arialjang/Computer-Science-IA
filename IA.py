@@ -39,16 +39,29 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+        
+        #if event.type == pygame.MOUSEMOTION:
+         #   if player_rect.collidepoint(event.pos):
+          #      print('collision')
+
     screen.blit(base_surface,(0,0)) #we place one surface on top of another
     screen.blit(fire_surface,fire_rect)
     screen.blit(text_surface,(300,50))
     #firefighter_x_pos -= 1
-    #if firefighter_x_pos < 0:
-    #    firefighter_x_pos = 600
 
+    if player_rect.right >= 800:
+        player_rect.left = 0
+    
     player_rect.left += 1 #always move rect that contains surface NOT surface.
     screen.blit(player_surf, player_rect)
     
+    #if player_rect.colliderect(fire_rect):
+    #    print('collision')
 
+    mouse_pos = pygame.mouse.get_pos()
+    #if player_rect.collidepoint(mouse_pos):
+     #   print('collision')
+      #  print(pygame.mouse.get_pressed())
+    
     pygame.display.update()
     clock.tick(100)
