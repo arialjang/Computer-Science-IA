@@ -7,115 +7,125 @@
 #git commit -m "message"
 #git push origin main
 import pygame
+import random
 from sys import exit
 
+game_active = False
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__() #parent class
+        self.image = pygame.transform.scale((pygame.image.load('graphics/firefighter/ff1.png').convert_alpha()),(50,50))
+        self.rect = self.image.get_rect(midbottom = (200,300))
+    def player_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RIGHT]:
+            self.rect.x += 50
+        if keys[pygame.K_LEFT]:
+            self.rect.x -= 50
+        if keys[pygame.K_UP]:
+            self.rect.y -= 50
+        if keys[pygame.K_DOWN]:
+            self.rect.y += 50
+    def player_interact(self):
+        if fire_rect.colliderect(self.rect):
+            global game_active
+            game_active = False
+    def update(self):
+        self.rect.clamp_ip(screen_rect)
+        self.player_input()
+    
+class Obstacle(pygame.sprite.Sprite):
+    def __init__(self,type):
+        super().__init__()
+        self.image = pygame.transform.scale((pygame.image.load('graphics/fire.jpg').convert()),(100,100))
+        self.rect = self.image.get_rect(midbottom = (500,300))
+        #self.rect = self.image.get_rect(midbottom = (random.randint(0,800),400))
+
+
 def display_score():
-    current_time = pygame.time.get_ticks() - int(start_time) #subtracts start time so subtracting ending time = 0
-    score_surf = test_font.render(f'{current_time}', False, (64,64,64))
-    score_rect = score_surf.get_rect(center = (400,50))
+    global current_time
+    current_time = int(pygame.time.get_ticks() / 1000) - int(start_time) #subtracts start time so subtracting ending time = 0
+    score_surf = test_font.render(f'Time: {current_time}', False, (255,255,255))
+    score_rect = score_surf.get_rect(center = (300,50))
     screen.blit(score_surf,score_rect)
-    print(current_time)
+    return current_time
+
 pygame.init()
 
-screen = pygame.display.set_mode((800, 400))
+screen = pygame.display.set_mode((600, 600))
+screen_rect = screen.get_rect()
 pygame.display.set_caption('Firefighting game')
 clock = pygame.time.Clock()
 test_font = pygame.font.Font(None, 50)
-game_active = True
 start_time = 0
-                                                                                                   #resized image
-player_surf = pygame.transform.scale((pygame.image.load('graphics/firefighter/ff1.png').convert_alpha()),(50,50))
-player_rect = player_surf.get_rect(midbottom=(250,250))
-#controlling the points in the image, e.g. controlling the placement of midleft point
-#draws a rectange around surface, e.g. hitbox
+score = 0
 
-base_surface = pygame.transform.scale((pygame.image.load('graphics/base.png').convert()),(800,400)) #image is new surface
+player = pygame.sprite.GroupSingle() #declare player as GroupSingle variable
+player.add(Player())
+pygame.sprite.
 
-boundary_surface = pygame.Surface((800,100))
-boundary_surface.fill('Brown')
-boundary_rect = boundary_surface.get_rect(midbottom=(400,450))
+base_surface = pygame.transform.scale((pygame.image.load('graphics/base.png').convert()),(600,600)) #image is new surface
 
-fire_surface = pygame.transform.scale((pygame.image.load('graphics/fire.jpg').convert()),(100,100))
-fire_rect = fire_surface.get_rect(midbottom=(600,250))
+#boundary_surface = pygame.Surface((800,100))
+#boundary_surface.fill('Brown')
+#boundary_rect = boundary_surface.get_rect(midbottom=(400,450))
 
+fire_rect = fire_surface.get_rect(midbottom=(500,250))
 
+game_name = test_font.render('Firefighting game', False, (111,196,169))
+game_name_rect = game_name.get_rect(center = (300, 200))
 
-firefighter_x_pos = 600
-
+game_message = test_font.render('Press space to start',False,(111,196,169))
+game_message_rect = game_message.get_rect(center = (300,400))
 
 #test_surface.fill('Red')
 
 while True:
     for event in pygame.event.get(): 
+        
         #existing function that records everything a user does, places actions into event queue
         #then interates through each event one by one to react to each action
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-        
-        if game_active:
-            if event.type == pygame.MOUSEMOTION:
-                if player_rect.collidepoint(event.pos): #mouse collides with player at whatever event
-                    print('collision')
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            game_active = True
+            start_time = (pygame.time.get_ticks() / 1000)
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE and player_rect.bottom >= 300:
-                    player_gravity = -20
-
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT:
-                    print("right")
-                    player_rect.x += 50
-                if event.key == pygame.K_LEFT:
-                    print("left")
-                    player_rect.x -= 50
-                if event.key == pygame.K_UP:
-                    print("up")
-                    player_rect.y -= 50
-                if event.key == pygame.K_DOWN:
-                    print("down")
-                    player_rect.y += 50
-        else:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                game_active = True
-                start_time = pygame.time.get_ticks()
-        
     if game_active: 
         screen.blit(base_surface,(0,0)) #we place one surface on top of another
         screen.blit(fire_surface,fire_rect)
-        screen.blit(boundary_surface, boundary_rect)
-        display_score()
+        #screen.blit(boundary_surface, boundary_rect)
+        score = display_score()
         #pygame.draw.line(screen,'Gold',(0,0),pygame.mouse.get_pos(),10)
                                     #top diagonal
-        #firefighter_x_pos -= 1
-
-        if player_rect.right >= 800:
-            player_rect.left = 0
-
-        if player_rect.bottom >= boundary_rect.top:
-            player_rect.bottom = boundary_rect.top
         
-        #player_gravity += 1
         #player_rect.y += player_gravity #changes the y axis
         #if player_rect.bottom >= 300:
         #    player_rect.bottom = 300
-        screen.blit(player_surf, player_rect)
+        player.draw(screen)
+        player.update()
 
         # collision
-        if fire_rect.colliderect(player_rect):
-            game_active = False
+        
 
     else:
         screen.fill('Yellow')
+        screen.blit(game_name, game_name_rect)
+        score_message = test_font.render(f'Your time: {score}', False, (111,196,169))
+        score_message_rect = score_message.get_rect(center = (300,400))
         
-        #keys = pygame.key.get_pressed()
-        #if keys[pygame.K_UP]:
-        #    print('jump')
+        
+        if score == 0:
+            screen.blit(game_message, game_message_rect)
+        else: 
+            screen.blit(score_message, score_message_rect)
+
 
         mouse_pos = pygame.mouse.get_pos()
         #if player_rect.collidepoint(mouse_pos):
         #   print('collision')
-        #  print(pygame.mouse.get_pressed())
         
     pygame.display.update()
     clock.tick(100) 
