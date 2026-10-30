@@ -27,20 +27,30 @@ class Player(pygame.sprite.Sprite):
             self.rect.y -= 50
         if keys[pygame.K_DOWN]:
             self.rect.y += 50
-    def player_interact(self):
-        if fire_rect.colliderect(self.rect):
-            global game_active
-            game_active = False
+    def player_interact(self, obstacle_group):
+        for obstacle in obstacle_group:
+            if self.rect.colliderect(obstacle.rect):
+                global game_active
+                game_active = False
     def update(self):
         self.rect.clamp_ip(screen_rect)
         self.player_input()
+        self.player_interact(obstacle_group)
     
 class Obstacle(pygame.sprite.Sprite):
-    def __init__(self,type):
+    def __init__(self, x, y, image_path):
         super().__init__()
-        self.image = pygame.transform.scale((pygame.image.load('graphics/fire.jpg').convert()),(100,100))
-        self.rect = self.image.get_rect(midbottom = (500,300))
-        #self.rect = self.image.get_rect(midbottom = (random.randint(0,800),400))
+        self.image = pygame.transform.scale((pygame.image.load(image_path).convert()),(100,100))
+        self.rect = self.image.get_rect(midbottom = (x, y))
+   
+
+class Fire(Obstacle):
+    def __init__(self, x, y):
+        super().__init__(x, y, 'graphics/fire.jpg')
+
+class Rock(Obstacle):
+    def __init__(self, x, y):
+        super().__init__(x, y,'graphics/rock.png')
 
 
 def display_score():
@@ -63,23 +73,17 @@ score = 0
 
 player = pygame.sprite.GroupSingle() #declare player as GroupSingle variable
 player.add(Player())
-pygame.sprite.
-
 base_surface = pygame.transform.scale((pygame.image.load('graphics/base.png').convert()),(600,600)) #image is new surface
 
 #boundary_surface = pygame.Surface((800,100))
 #boundary_surface.fill('Brown')
 #boundary_rect = boundary_surface.get_rect(midbottom=(400,450))
 
-fire_rect = fire_surface.get_rect(midbottom=(500,250))
-
 game_name = test_font.render('Firefighting game', False, (111,196,169))
 game_name_rect = game_name.get_rect(center = (300, 200))
 
-game_message = test_font.render('Press space to start',False,(111,196,169))
+game_message = test_font.render('Press space to start', False, (111,196,169))
 game_message_rect = game_message.get_rect(center = (300,400))
-
-#test_surface.fill('Red')
 
 while True:
     for event in pygame.event.get(): 
@@ -90,12 +94,13 @@ while True:
             pygame.quit()
             exit()
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            player.sprite.rect.midbottom = (200,300)
             game_active = True
             start_time = (pygame.time.get_ticks() / 1000)
 
     if game_active: 
         screen.blit(base_surface,(0,0)) #we place one surface on top of another
-        screen.blit(fire_surface,fire_rect)
+        
         #screen.blit(boundary_surface, boundary_rect)
         score = display_score()
         #pygame.draw.line(screen,'Gold',(0,0),pygame.mouse.get_pos(),10)
@@ -104,24 +109,26 @@ while True:
         #player_rect.y += player_gravity #changes the y axis
         #if player_rect.bottom >= 300:
         #    player_rect.bottom = 300
+        obstacle_group = pygame.sprite.Group()
+        obstacle_group.add(Fire(100,100))
+        obstacle_group.add(Fire(300,300))
+        obstacle_group.add(Rock(150,150))
+        obstacle_group.add(Rock(50,50))
+
         player.draw(screen)
         player.update()
-
-        # collision
-        
-
+        obstacle_group.draw(screen)
+        obstacle_group.update()
     else:
         screen.fill('Yellow')
         screen.blit(game_name, game_name_rect)
         score_message = test_font.render(f'Your time: {score}', False, (111,196,169))
         score_message_rect = score_message.get_rect(center = (300,400))
         
-        
         if score == 0:
             screen.blit(game_message, game_message_rect)
         else: 
             screen.blit(score_message, score_message_rect)
-
 
         mouse_pos = pygame.mouse.get_pos()
         #if player_rect.collidepoint(mouse_pos):
