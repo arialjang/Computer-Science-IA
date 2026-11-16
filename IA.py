@@ -80,10 +80,28 @@ def low_visibility(screen, player_rect):
                 pygame.draw.rect(screen, (15, 15, 15), (x, y, 50, 50))
                 #draws dark gray rgb on x,y top left corner
 
+
 def generate_obstacle():
-    obstacle_x = (random.randint(1, 10)) * 50
-    obstacle_y = (random.randint(1, 10)) * 50
-    return obstacle_x, obstacle_y
+    rockCount = 5
+    fireCount = 5
+    obstacle_group.empty()
+
+    occupied = {(player.sprite.rect.x, player.sprite.rect.y)}
+
+    while len(occupied) < rockCount:
+        obstacle_x = (random.randint(1, 10)) * 50
+        obstacle_y = (random.randint(1, 10)) * 50
+        if (obstacle_x, obstacle_y) not in occupied:
+            occupied.add((obstacle_x, obstacle_y))
+            obstacle_group.add(Rock(obstacle_x,obstacle_y))
+
+    while len(occupied) < fireCount + rockCount:
+        obstacle_x = (random.randint(1, 10)) * 50
+        obstacle_y = (random.randint(1, 10)) * 50
+        if (obstacle_x, obstacle_y) not in occupied:
+            occupied.add((obstacle_x, obstacle_y))
+            obstacle_group.add(Fire(obstacle_x,obstacle_y))
+
 
 
 
@@ -96,11 +114,10 @@ game_message_rect = game_message.get_rect(center = (300,400))
 
 obstacle_group = pygame.sprite.Group()
 
-square1_x, square1_y = generate_obstacle()
+generate_obstacle()
 
-#obstacle_group.add(Fire(150,150))
-#obstacle_group.add(Fire(300,300))
-obstacle_group.add(Rock(square1_x,square1_y))
+
+
 
 while True:
     for event in pygame.event.get(): 
@@ -109,10 +126,12 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             player.sprite.rect.midbottom = (75,550)
             game_active = True
             start_time = (pygame.time.get_ticks() / 1000)
+
         if event.type == pygame.KEYDOWN and game_active:
             if  event.key == pygame.K_RIGHT:
                 player.sprite.move(50, 0)
@@ -137,8 +156,6 @@ while True:
         #low_visibility(screen, player.sprite.rect)
 
         score = display_score() #surfaces appear based on order
-
-
 
     else:
         screen.fill('Yellow')
