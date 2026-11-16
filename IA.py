@@ -24,8 +24,9 @@ class Player(pygame.sprite.Sprite):
     def player_interact(self, obstacle_group):
         for obstacle in obstacle_group:
             if self.rect.colliderect(obstacle.rect):
-                global game_active
-                game_active = False
+                if isinstance(obstacle, Fire):
+                    global game_active
+                    game_active = False
 
     def update(self):
         self.rect.clamp_ip(screen_rect.inflate(-100, -100))
@@ -42,9 +43,9 @@ class Fire(Obstacle):
     def __init__(self, x, y):
         super().__init__(x, y, 'graphics/fire.jpg')
 
-class Rock(Obstacle):
+class House(Obstacle):
     def __init__(self, x, y):
-        super().__init__(x, y,'graphics/rock.png')
+        super().__init__(x, y,'graphics/house.png')
 
 
 def display_score():
@@ -80,31 +81,25 @@ def low_visibility(screen, player_rect):
                 pygame.draw.rect(screen, (15, 15, 15), (x, y, 50, 50))
                 #draws dark gray rgb on x,y top left corner
 
-
 def generate_obstacle():
-    rockCount = 5
+    houseCount = 5
     fireCount = 5
     obstacle_group.empty()
-
     occupied = {(player.sprite.rect.x, player.sprite.rect.y)}
 
-    while len(occupied) < rockCount:
+    while len(occupied) < houseCount:
         obstacle_x = (random.randint(1, 10)) * 50
         obstacle_y = (random.randint(1, 10)) * 50
         if (obstacle_x, obstacle_y) not in occupied:
             occupied.add((obstacle_x, obstacle_y))
-            obstacle_group.add(Rock(obstacle_x,obstacle_y))
+            obstacle_group.add(House(obstacle_x,obstacle_y))
 
-    while len(occupied) < fireCount + rockCount:
+    while len(occupied) < fireCount + houseCount:
         obstacle_x = (random.randint(1, 10)) * 50
         obstacle_y = (random.randint(1, 10)) * 50
         if (obstacle_x, obstacle_y) not in occupied:
             occupied.add((obstacle_x, obstacle_y))
             obstacle_group.add(Fire(obstacle_x,obstacle_y))
-
-
-
-
 
 game_name = test_font.render('Firefighting game', False, (111,196,169))
 game_name_rect = game_name.get_rect(center = (300, 200))
@@ -112,12 +107,9 @@ game_name_rect = game_name.get_rect(center = (300, 200))
 game_message = test_font.render('Press space to start', False, (111,196,169))
 game_message_rect = game_message.get_rect(center = (300,400))
 
-obstacle_group = pygame.sprite.Group()
+obstacle_group = pygame.sprite.Group() #empty container for sprites
 
 generate_obstacle()
-
-
-
 
 while True:
     for event in pygame.event.get(): 
@@ -145,15 +137,15 @@ while True:
     if game_active: #things that happen continuously
         screen.blit(base_surface,(0,0)) #we place one surface on top of another
        
-       #PLAYER
-        player.update()
-        player.draw(screen)
-
         #OBSTACLE
         obstacle_group.draw(screen)
         obstacle_group.update()
 
-        #low_visibility(screen, player.sprite.rect)
+        #PLAYER
+        player.update()
+        player.draw(screen)
+
+        low_visibility(screen, player.sprite.rect)
 
         score = display_score() #surfaces appear based on order
 
