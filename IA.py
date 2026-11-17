@@ -11,12 +11,16 @@ import random
 from sys import exit
 
 game_active = False
+pygame.init()
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, image_name):
         super().__init__() #parent class
-        self.image = pygame.transform.scale((pygame.image.load('graphics/firefighter/ff1.png').convert_alpha()),(50,50))
+        self.image = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{image_name}').convert_alpha()),(50,50))
+        #required attribute for sprite
         self.rect = self.image.get_rect(topleft = (100,500))
+    def set_image(self, image_name): 
+        self.image = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{image_name}').convert_alpha()),(50,50))
     def move(self, dx, dy):
         self.rect.x += dx
         self.rect.y += dy
@@ -38,7 +42,6 @@ class Obstacle(pygame.sprite.Sprite):
         self.image = pygame.transform.scale((pygame.image.load(image_path).convert()),(50,50))
         self.rect = self.image.get_rect(topleft = (x, y))
    
-
 class Fire(Obstacle):
     def __init__(self, x, y):
         super().__init__(x, y, 'graphics/fire.jpg')
@@ -47,37 +50,35 @@ class House(Obstacle):
     def __init__(self, x, y):
         super().__init__(x, y,'graphics/house.png')
 
-
 def display_score():
     global current_time
     current_time = int(pygame.time.get_ticks() / 1000) - int(start_time) #subtracts start time so subtracting ending time = 0
-    score_surf = test_font.render(f'Time: {current_time}', False, (0,0,0))
+    score_surf = main_font.render(f'Time: {current_time}', False, (255,255,255))
     score_rect = score_surf.get_rect(center = (300,25))
     screen.blit(score_surf,score_rect)
     return current_time
-
-pygame.init()
 
 screen = pygame.display.set_mode((600, 600))
 screen_rect = screen.get_rect()
 pygame.display.set_caption('Firefighting game')
 clock = pygame.time.Clock()
-test_font = pygame.font.Font(None, 50)
+main_font = pygame.font.Font(None, 50)
+sub_font = pygame.font.Font(None, 40)
 start_time = 0
 score = 0
 
 player = pygame.sprite.GroupSingle() #declare player as GroupSingle variable
-player.add(Player())
+player.add(Player('default.png'))
 base_surface = pygame.transform.scale((pygame.image.load('graphics/base.png').convert()),(600,600)) 
 
 def low_visibility(screen, player_rect):
     px, py = player_rect.topleft
-    for x in range(600):
-        for y in range(600):
+    for x in range(0,600,50): #checks every 50 blocks
+        for y in range(0, 600, 50):
             distance_x = abs(x - px)
             distance_y = abs(y - py)
 
-            if distance_x > 100 or distance_y > 100:
+            if distance_x > 50 or distance_y > 50: #one block radius
                 pygame.draw.rect(screen, (15, 15, 15), (x, y, 50, 50))
                 #draws dark gray rgb on x,y top left corner
 
@@ -101,15 +102,42 @@ def generate_obstacle():
             occupied.add((obstacle_x, obstacle_y))
             obstacle_group.add(Fire(obstacle_x,obstacle_y))
 
-game_name = test_font.render('Firefighting game', False, (111,196,169))
-game_name_rect = game_name.get_rect(center = (300, 200))
+ff_selection = ['default.png','arial.png','aurora.png', 'giulia.png', 'carly.png']
+ff_index = 0
+player_present = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{ff_selection[0]}').convert_alpha()),(300,300)) 
+player_present_rect = player_present.get_rect(center = (300, 300))
 
-game_message = test_font.render('Press space to start', False, (111,196,169))
-game_message_rect = game_message.get_rect(center = (300,400))
+def player_selection(): #carousel display
+    global ff_index, player_present #declare as global
+    if not game_active and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #left click
+            if left_player_rect.collidepoint(event.pos):
+                ff_index = (ff_index - 1) % len(ff_selection)
+                player_present = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{ff_selection[ff_index]}').convert_alpha()),(300,300)) 
+   
+    if not game_active and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #left click
+            if right_player_rect.collidepoint(event.pos):
+                ff_index = (ff_index + 1) % len(ff_selection)
+                player_present = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{ff_selection[ff_index]}').convert_alpha()),(300,300)) 
+
+left_player = pygame.transform.scale((pygame.image.load(f'graphics/buttons/left_arrow.png').convert_alpha()),(100,100))
+left_player_rect = left_player.get_rect(center = (100, 300))
+
+right_player = pygame.transform.scale((pygame.image.load(f'graphics/buttons/right_arrow.png').convert_alpha()),(100,100))
+right_player_rect = right_player.get_rect(center = (500, 300))
+
+game_name = main_font.render('Firefighting game', False, (255,0,0))
+game_name_rect = game_name.get_rect(center = (300, 50))
+
+choose_player = sub_font.render('Choose your player', False, (200,0,0))
+choose_player_rect = choose_player.get_rect(center=(300, 100))
+
+game_message = main_font.render('Press space to start', False, (255,0,0))
+game_message_rect = game_message.get_rect(center = (300,500))
 
 obstacle_group = pygame.sprite.Group() #empty container for sprites
 
 generate_obstacle()
+
 
 while True:
     for event in pygame.event.get(): 
@@ -120,7 +148,8 @@ while True:
             exit()
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            player.sprite.rect.midbottom = (75,550)
+            player.sprite.set_image(ff_selection[ff_index])
+            player.sprite.rect.topleft = (50,500)
             game_active = True
             start_time = (pygame.time.get_ticks() / 1000)
 
@@ -133,6 +162,9 @@ while True:
                 player.sprite.move(0, -50)
             elif event.key == pygame.K_DOWN:
                 player.sprite.move(0, 50)
+
+        player_selection()
+    
     
     if game_active: #things that happen continuously
         screen.blit(base_surface,(0,0)) #we place one surface on top of another
@@ -152,22 +184,25 @@ while True:
     else:
         screen.fill('Yellow')
         screen.blit(game_name, game_name_rect)
-        score_message = test_font.render(f'Your time: {score}', False, (111,196,169))
+        score_message = main_font.render(f'Your time: {score}', False, (255,0,0))
         score_message_rect = score_message.get_rect(center = (300,400))
         
         if score == 0:
+            screen.blit(choose_player, choose_player_rect)
+            screen.blit(player_present, player_present_rect)
             screen.blit(game_message, game_message_rect)
+            screen.blit(left_player, left_player_rect)
+            screen.blit(right_player, right_player_rect)
+
         else: 
             screen.blit(score_message, score_message_rect)
 
         mouse_pos = pygame.mouse.get_pos()
         #if player_rect.collidepoint(mouse_pos):
         #   print('collision')
-        
     pygame.display.update()
     clock.tick(100) 
     
-
 #NOTES
 #using classes and there are specific controls within that specific class
 #--> pygame.mouse and pygame.keys
