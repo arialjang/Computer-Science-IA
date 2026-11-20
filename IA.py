@@ -9,6 +9,7 @@
 import pygame
 import random
 from sys import exit
+import numpy as np
 
 game_active = False
 pygame.init()
@@ -18,7 +19,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__() #parent class
         self.image = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{image_name}').convert_alpha()),(50,50))
         #required attribute for sprite
-        self.rect = self.image.get_rect(topleft = (100,500))
+        self.rect = self.image.get_rect(topleft = (100, 500))
     def set_image(self, image_name): 
         self.image = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{image_name}').convert_alpha()),(50,50))
     def move(self, dx, dy):
@@ -33,7 +34,7 @@ class Player(pygame.sprite.Sprite):
                     game_active = False
 
     def update(self):
-        self.rect.clamp_ip(screen_rect.inflate(-100, -100))
+        self.rect.clamp_ip(player_area_rect.inflate(-100, -100))
         self.player_interact(obstacle_group)
     
 class Obstacle(pygame.sprite.Sprite):
@@ -58,7 +59,8 @@ def display_score():
     screen.blit(score_surf,score_rect)
     return current_time
 
-screen = pygame.display.set_mode((600, 600))
+screen = pygame.display.set_mode((1200, 600))
+player_area_rect = pygame.Rect(0, 0, 600, 600) #player is bound to left half
 screen_rect = screen.get_rect()
 pygame.display.set_caption('Firefighting game')
 clock = pygame.time.Clock()
@@ -66,6 +68,7 @@ main_font = pygame.font.Font(None, 50)
 sub_font = pygame.font.Font(None, 40)
 start_time = 0
 score = 0
+timeLimit = 100
 
 player = pygame.sprite.GroupSingle() #declare player as GroupSingle variable
 player.add(Player('default.png'))
@@ -73,7 +76,7 @@ base_surface = pygame.transform.scale((pygame.image.load('graphics/base.png').co
 
 def low_visibility(screen, player_rect):
     px, py = player_rect.topleft
-    for x in range(0,600,50): #checks every 50 blocks
+    for x in range(0, 600, 50): #checks every 50 blocks
         for y in range(0, 600, 50):
             distance_x = abs(x - px)
             distance_y = abs(y - py)
@@ -82,24 +85,41 @@ def low_visibility(screen, player_rect):
                 pygame.draw.rect(screen, (15, 15, 15), (x, y, 50, 50))
                 #draws dark gray rgb on x,y top left corner
 
+house_coords = []
+fire_coords = []
+agent_pos = [50,500]
+
 def generate_obstacle():
+    global house_coords, fire_coords, agent_pos
     houseCount = 5
     fireCount = 5
+
     obstacle_group.empty()
-    occupied = {(player.sprite.rect.x, player.sprite.rect.y)}
+    house_coords.clear()
+    fire_coords.clear()
 
-    while len(occupied) < houseCount:
+    player_spawn_pos = (50, 500)
+    player.sprite.rect.topleft = player_spawn_pos
+    agent_pos = player_spawn_pos
+
+
+    occupied = {player_spawn_pos, (50, 450, (100, 500))}
+    reserved_count = len(occupied)
+
+    while len(occupied) < reserved_count + houseCount:
         obstacle_x = (random.randint(1, 10)) * 50
         obstacle_y = (random.randint(1, 10)) * 50
         if (obstacle_x, obstacle_y) not in occupied:
             occupied.add((obstacle_x, obstacle_y))
-            obstacle_group.add(House(obstacle_x,obstacle_y))
+            house_coords.append((obstacle_x, obstacle_y))
+            obstacle_group.add(House(obstacle_x, obstacle_y))
 
-    while len(occupied) < fireCount + houseCount:
+    while len(occupied) < reserved_count + fireCount + houseCount:
         obstacle_x = (random.randint(1, 10)) * 50
         obstacle_y = (random.randint(1, 10)) * 50
         if (obstacle_x, obstacle_y) not in occupied:
             occupied.add((obstacle_x, obstacle_y))
+            fire_coords.append((obstacle_x, obstacle_y))
             obstacle_group.add(Fire(obstacle_x,obstacle_y))
 
 ff_selection = ['default.png','arial.png','aurora.png', 'giulia.png', 'carly.png']
@@ -119,6 +139,11 @@ def player_selection(): #carousel display
                 ff_index = (ff_index + 1) % len(ff_selection)
                 player_present = pygame.transform.scale((pygame.image.load(f'graphics/firefighters/{ff_selection[ff_index]}').convert_alpha()),(300,300)) 
 
+def draw_rl_screen():
+    offset_X = 600
+    screen.blit(base_surface)
+
+
 left_player = pygame.transform.scale((pygame.image.load(f'graphics/buttons/left_arrow.png').convert_alpha()),(100,100))
 left_player_rect = left_player.get_rect(center = (100, 300))
 
@@ -136,6 +161,7 @@ game_message_rect = game_message.get_rect(center = (300,500))
 
 obstacle_group = pygame.sprite.Group() #empty container for sprites
 
+#RUN BEFORE GAME STARTS
 generate_obstacle()
 
 
@@ -162,9 +188,7 @@ while True:
                 player.sprite.move(0, -50)
             elif event.key == pygame.K_DOWN:
                 player.sprite.move(0, 50)
-
         player_selection()
-    
     
     if game_active: #things that happen continuously
         screen.blit(base_surface,(0,0)) #we place one surface on top of another
@@ -180,12 +204,17 @@ while True:
         low_visibility(screen, player.sprite.rect)
 
         score = display_score() #surfaces appear based on order
+        if score > timeLimit:
+            game_active = False
 
     else:
         screen.fill('Yellow')
         screen.blit(game_name, game_name_rect)
         score_message = main_font.render(f'Your time: {score}', False, (255,0,0))
         score_message_rect = score_message.get_rect(center = (300,400))
+        if score > timeLimit: #DOESNT WORK IDK WHY-------------------------------------
+            time_limit = main_font.render(f'You ran out of time!', False, (255,0,0))
+            time_limit_rect = time_limit.get_rect(center = (300,200))
         
         if score == 0:
             screen.blit(choose_player, choose_player_rect)
